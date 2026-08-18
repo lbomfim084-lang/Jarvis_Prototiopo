@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#070b12" />
+  <title>J.A.R.V.I.S. — Assistente Pessoal</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="JARVIS" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- Splash inicial (some após carregar) -->
+    <div class="splash" id="splash" aria-hidden="true">
+      <div class="splash-ring"></div>
+      <div class="splash-title">J.A.R.V.I.S.</div>
+      <div class="splash-sub">inicializando</div>
+    </div>
+
+    <!-- Cabeçalho -->
+    <header class="header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1 class="brand-name">J.A.R.V.I.S.</h1>
+      </div>
+      <div class="status" id="statusIndicator" role="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Online</span>
+      </div>
+    </header>
+
+    <!-- Conversa -->
+    <main class="conversation" id="conversation" aria-live="polite">
+      <div class="empty-state" id="emptyState">
+        <p class="empty-title">Pronto para ouvir.</p>
+        <p class="empty-sub">Toque no microfone e fale, ou use o campo de texto abaixo.</p>
+      </div>
+      <!-- mensagens injetadas via JS -->
+    </main>
+
+    <!-- Área de transcrição ao vivo -->
+    <div class="live-transcript" id="liveTranscript" aria-live="polite">
+      <span class="live-transcript-label">ouvindo…</span>
+      <span class="live-transcript-text" id="liveTranscriptText"></span>
+    </div>
+
+    <!-- Entrada de texto (fallback) -->
+    <form class="text-input-row" id="textForm">
+      <input
+        type="text"
+        id="textInput"
+        class="text-input"
+        placeholder="Fale com o Jarvis…"
+        autocomplete="off"
+        aria-label="Escrever mensagem para o Jarvis"
+      />
+      <button type="submit" class="text-send" aria-label="Enviar mensagem">➤</button>
+    </form>
+
+    <!-- Controle principal de voz -->
+    <div class="mic-zone">
+      <button class="mic-button" id="micButton" aria-label="Falar com o Jarvis">
+        <span class="mic-ring ring-1"></span>
+        <span class="mic-ring ring-2"></span>
+        <span class="mic-ring ring-3"></span>
+        <span class="mic-icon" id="micIcon">🎙</span>
+      </button>
+      <p class="mic-hint" id="micHint">toque para falar</p>
+    </div>
+
+    <!-- Barra de utilidades -->
+    <nav class="toolbar">
+      <button class="tool-btn" id="voiceToggleBtn" aria-pressed="true" title="Ativar/desativar voz">
+        <span class="tool-icon" id="voiceToggleIcon">🔊</span>
+        <span class="tool-label">Voz</span>
+      </button>
+      <button class="tool-btn" id="notesBtn" title="Anotações">
+        <span class="tool-icon">📝</span>
+        <span class="tool-label">Notas</span>
+      </button>
+      <button class="tool-btn" id="memoryBtn" title="Memória">
+        <span class="tool-icon">🧠</span>
+        <span class="tool-label">Memória</span>
+      </button>
+      <button class="tool-btn" id="clearBtn" title="Limpar conversa">
+        <span class="tool-icon">🗑</span>
+        <span class="tool-label">Limpar</span>
+      </button>
+      <button class="tool-btn" id="settingsBtn" title="Configurações">
+        <span class="tool-icon">⚙</span>
+        <span class="tool-label">Ajustes</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Painel: Anotações -->
+  <div class="sheet-overlay" id="notesOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <h2>Anotações</h2>
+        <button class="sheet-close" data-close="notesOverlay" aria-label="Fechar">✕</button>
+      </div>
+      <ul class="sheet-list" id="notesList"></ul>
+      <p class="sheet-empty" id="notesEmpty">Nenhuma anotação ainda.</p>
+    </div>
+  </div>
+
+  <!-- Painel: Memória -->
+  <div class="sheet-overlay" id="memoryOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <h2>Memória</h2>
+        <button class="sheet-close" data-close="memoryOverlay" aria-label="Fechar">✕</button>
+      </div>
+      <ul class="sheet-list" id="memoryList"></ul>
+      <p class="sheet-empty" id="memoryEmpty">Nada salvo ainda.</p>
+    </div>
+  </div>
+
+  <!-- Painel: Configurações -->
+  <div class="sheet-overlay" id="settingsOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <h2>Configurações</h2>
+        <button class="sheet-close" data-close="settingsOverlay" aria-label="Fechar">✕</button>
+      </div>
+      <label class="field-label" for="aiEndpointInput">Endpoint de IA (backend/proxy)</label>
+      <input
+        type="url"
+        id="aiEndpointInput"
+        class="field-input"
+        placeholder="https://seu-backend.exemplo.com/ask"
+      />
+      <p class="field-hint">
+        Nunca coloque chaves de API aqui diretamente no app. Configure um backend
+        que guarda a chave em segredo e recebe { "question": "..." }, respondendo
+        { "answer": "..." }.
+      </p>
+      <button class="field-save" id="saveEndpointBtn">Salvar</button>
+
+      <div class="divider"></div>
+
+      <label class="field-label" for="langSelect">Idioma de voz</label>
+      <select id="langSelect" class="field-input">
+        <option value="pt-BR">Português (Brasil)</option>
+        <option value="en-US">English (US)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Painel: confirmação de ação -->
+  <div class="sheet-overlay" id="confirmOverlay">
+    <div class="sheet sheet-confirm">
+      <p class="confirm-text" id="confirmText">Confirmar ação?</p>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-cancel" id="confirmCancelBtn">Cancelar</button>
+        <button class="confirm-btn confirm-ok" id="confirmOkBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de erro -->
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
